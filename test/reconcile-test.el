@@ -734,6 +734,27 @@ http://bugs.ledger-cli.org/show_bug.cgi?id=262"
       (should ;; Expected: previous line
        (eq (1- line-before-delete) (line-number-at-pos))))))
 
+(ert-deftest ledger-reconcile/test-029 ()
+  "Reconcile balances close to but not zero."
+  :tags '(reconcile regress)
+
+  (ledger-tests-with-temp-file
+"2018/01/01  Opening Balance
+    Equity
+    Assets:Checking  $100.00
+
+2018/01/02  (1) Mom
+    Expenses
+    Assets:Checking  $-99.50
+"
+    (cl-letf (((symbol-function #'read-from-minibuffer) (lambda (_) "0.50")))
+      (ledger-reconcile "Assets:Checking"
+                        (ledger-read-commodity-string "prompt")))
+    (select-window (get-buffer-window ledger-recon-buffer-name)) ; IRL user select recon window
+    (forward-line 2)                    ; because of ledger-reconcile-buffer-header
+    (ledger-reconcile-toggle)           ; mark pending
+    (forward-line 1)
+    (ledger-reconcile-toggle)))         ; mark pending
 
 (provide 'reconcile-test)
 
